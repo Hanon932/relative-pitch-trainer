@@ -82,6 +82,19 @@
   /* Question card */
   .card { background: var(--surface); border-radius: 14px; padding: 24px; display: grid; gap: 18px; }
   .card .lead { margin: 0; font-size: 17px; font-weight: 500; text-wrap: balance; }
+  .gaps { display: grid; gap: 8px; }
+  .gaps small { color: var(--muted); font-size: 12px; letter-spacing: .08em; }
+  .gaprow { display: flex; flex-wrap: wrap; gap: 6px; }
+  .gap {
+    font: inherit; font-size: 13.5px; cursor: pointer; padding: 6px 12px; border-radius: 999px;
+    background: transparent; color: var(--ink); border: 1.5px solid var(--line);
+    display: inline-flex; gap: 6px; align-items: baseline;
+  }
+  .gap em { font-style: normal; font-size: 11px; color: var(--muted); }
+  .gap[aria-pressed="true"] { background: var(--btn); color: var(--btn-ink); border-color: var(--btn); }
+  .gap[aria-pressed="true"] em { color: inherit; opacity: .7; }
+  .gap .ok { color: var(--ok); font-size: 11px; }
+  .gap[aria-pressed="true"] .ok { color: inherit; }
   .playrow { display: flex; flex-wrap: wrap; gap: 10px; }
   .btn {
     font: inherit; font-weight: 700; cursor: pointer; border-radius: 999px; padding: 10px 20px;
@@ -149,6 +162,10 @@
     <section class="card" aria-live="polite">
       <h2 id="qlabel">問題 1</h2>
       <p class="lead" id="lead"></p>
+      <div class="gaps" id="gaps" hidden>
+        <small>音の離れ具合（左ほどかんたん）</small>
+        <div class="gaprow" id="gaprow"></div>
+      </div>
       <div class="playrow">
         <button class="btn big" id="play" type="button">▶ 問題を聴く</button>
         <button class="btn ghost" id="refBtn" type="button">ドレミ…を聴く</button>
@@ -184,6 +201,18 @@
   const LIGHT_INK = new Set([2]); // yellow needs dark text
   const KEY_NAMES = ['C', 'C♯/D♭', 'D', 'E♭', 'E', 'F', 'F♯/G♭', 'G', 'A♭', 'A', 'B♭', 'B'];
 
+  // Lv.1 interval widths, easiest (widest) first. Named by movable-do steps, no chromatic gaps.
+  const GAPS = [
+    { id: 12, from: 'ド', to: '高いド', diff: '★' },
+    { id: 9, from: 'ド', to: 'ラ', diff: '★★' },
+    { id: 7, from: 'ド', to: 'ソ', diff: '★★' },
+    { id: 5, from: 'ド', to: 'ファ', diff: '★★★' },
+    { id: 4, from: 'ド', to: 'ミ', diff: '★★★' },
+    { id: 2, from: 'ド', to: 'レ', diff: '★★★★' },
+    { id: 0, label: 'ぜんぶまぜる', diff: '' },
+  ];
+  const gapLabel = g => g.label || `${g.from}→${g.to}`;
+
   const LEVELS = [
     { id: 1, tag: 'Lv.1', title: '上がる？下がる？', lead: '2つの音が鳴ります。2つめの音は、1つめより高い？低い？', type: 'updown' },
     { id: 2, tag: 'Lv.2', title: 'ド・ミ・ソ', lead: 'はじめに「ド」が鳴ります。次の音はどれ？', type: 'degree', set: [0, 2, 4, 7] },
@@ -198,6 +227,7 @@
   const saved = load();
   saved.stats = saved.stats || {};
   let level = LEVELS.find(l => l.id === saved.level) || LEVELS[0];
+  let gap = GAPS.find(g => g.id === saved.gap) || GAPS[0];
 
   // ---------- audio ----------
   let ctx, master, active = [];
@@ -254,11 +284,12 @@
   function newQuestion() {
     qNum++;
     if (level.type === 'updown') {
-      const gap = 4 + rand(9);           // 4〜12 semitones: big, easy to hear
+      const fixed = GAPS.filter(g => g.id);
+      const g = gap.id ? gap : fixed[rand(fixed.length)];
       const up = Math.random() < 0.5;
-      const low = 55 + rand(79 - 55 - gap + 1);   // keep both notes in G3〜G5
-      const a = up ? low : low + gap;
-      q = { a, b: up ? a + gap : a - gap, answer: up ? 'up' : 'down', gap, answered: false };
+      const low = 55 + rand(79 - 55 - g.id + 1);   // keep both notes in G3〜G5
+      const a = up ? low : low + g.id;
+      q = { a, b: up ? a + g.id : a - g.id, answer: up ? 'up' : 'down', g, answered: false };
     } else {
       tonic = 55 + rand(12);             // G3〜F#4: key changes every question
       const deg = level.set[rand(level.set.length)];
@@ -273,7 +304,10 @@
     else seq([tonic, tonic + DEG[q.deg].semi], 0.85, 1.2);
   }
   function playScale() {
-    if (level.type === 'updown') return seq([60, 62, 64, 65, 67, 69, 71, 72], 0.32, 0.6);
+    if (level.type === 'updown') {
+      if (!gap.id) return seq([60, 62, 64, 65, 67, 69, 71, 72], 0.32, 0.6);
+      return seq([60, 60 + gap.id, 60 + gap.id, 60], 0.7, 0.65);
+    }
     seq(DEG.map(d => tonic + d.semi), 0.32, 0.6);
   }
 
@@ -289,6 +323,21 @@
       b.innerHTML = `<small>${l.tag}</small><b>${l.title}</b>`;
       b.onclick = () => { if (l === level) return; level = l; saved.level = l.id; save(); stopAll(); q = null; qNum = 0; renderAll(); };
       $('levels').appendChild(b);
+    });
+  }
+
+  function renderGaps() {
+    $('gaps').hidden = level.type !== 'updown';
+    const row = $('gaprow'); row.innerHTML = '';
+    GAPS.forEach(g => {
+      const b = document.createElement('button');
+      const s = saved.stats['1-' + g.id];
+      const cleared = s && s.t >= 20 && s.c / s.t >= 0.8;
+      b.type = 'button'; b.className = 'gap'; b.id = 'gap' + g.id;
+      b.setAttribute('aria-pressed', String(g === gap));
+      b.innerHTML = `${gapLabel(g)}${g.diff ? `<em>${g.diff}</em>` : ''}${cleared ? '<span class="ok">✓</span>' : ''}`;
+      b.onclick = () => { if (g === gap) return; gap = g; saved.gap = g.id; save(); stopAll(); q = null; qNum = 0; renderAll(); };
+      row.appendChild(b);
     });
   }
 
@@ -312,7 +361,9 @@
     $('qlabel').textContent = `${level.tag} ・ 問題 ${Math.max(qNum, 1)}`;
     $('lead').textContent = level.lead;
     $('play').textContent = q ? '↻ もう一度聴く' : '▶ 問題を聴く';
-    $('refBtn').textContent = level.type === 'updown' ? 'ドレミ…を聴く' : 'このキーのドレミを聴く';
+    $('refBtn').textContent = level.type !== 'updown' ? 'このキーのドレミを聴く'
+      : gap.id ? `お手本：${gapLabel(gap)}の幅を聴く` : 'ドレミ…を聴く';
+    renderGaps();
     $('feedback').hidden = true;
 
     const box = $('answers'); box.innerHTML = '';
@@ -338,18 +389,21 @@
     return b;
   }
 
-  function stat() { return saved.stats[level.id] || (saved.stats[level.id] = { c: 0, t: 0, s: 0, best: 0 }); }
+  const statKey = () => level.type === 'updown' ? '1-' + gap.id : level.id;
+  function stat() { const k = statKey(); return saved.stats[k] || (saved.stats[k] = { c: 0, t: 0, s: 0, best: 0 }); }
   function renderStats() {
     const s = stat();
     $('sCorrect').textContent = s.c;
     $('sTotal').textContent = s.t;
     $('sRate').textContent = s.t ? Math.round((s.c / s.t) * 100) + '%' : '–';
     $('sStreak').textContent = s.s;
-    const next = LEVELS[LEVELS.indexOf(level) + 1];
+    const nextGap = level.type === 'updown' ? GAPS[GAPS.indexOf(gap) + 1] : null;
+    const next = nextGap ? { tag: '次は', title: gapLabel(nextGap) } : LEVELS[LEVELS.indexOf(level) + 1];
     const hint = $('hint');
     const ready = s.t >= 20 && s.c / s.t >= 0.8;
     hint.className = 'hint' + (ready && next ? ' go' : '');
-    if (ready && next) hint.textContent = `正答率80%を超えました！ ${next.tag}「${next.title}」に進んでみましょう。`;
+    if (ready && nextGap) hint.textContent = `正答率80%を超えました！ 次は「${gapLabel(nextGap)}」に挑戦してみましょう。`;
+    else if (ready && next) hint.textContent = `正答率80%を超えました！ ${next.tag}「${next.title}」に進んでみましょう。`;
     else if (ready) hint.textContent = '最終レベルで80%超え。かなり耳ができてきています！';
     else hint.textContent = `目安：20問以上で正答率80%を超えたら次のレベルへ（ベスト連続正解 ${s.best}）`;
   }
@@ -361,7 +415,7 @@
     const ok = String(v) === String(q.answer);
     const s = stat();
     s.t++; if (ok) { s.c++; s.s++; s.best = Math.max(s.best, s.s); } else s.s = 0;
-    save(); renderStats();
+    save(); renderStats(); if (level.type === 'updown') renderGaps();
 
     document.querySelectorAll('.ans').forEach(b => {
       if (b.dataset.v === String(q.answer)) b.classList.add('right');
@@ -375,7 +429,7 @@
     let msg, sub, acts = '';
     if (level.type === 'updown') {
       msg = ok ? '正解！' : `ざんねん、正解は「${q.answer === 'up' ? '上がった' : '下がった'}」`;
-      sub = `${q.gap}半音${q.answer === 'up' ? '上がりました' : '下がりました'}`;
+      sub = `「${gapLabel(q.g)}」の幅だけ${q.answer === 'up' ? '上がりました' : '下がりました'}`;
     } else {
       const d = DEG[q.answer];
       msg = ok ? `正解！「${d.name}」` : `ざんねん、正解は「${d.name}」`;
@@ -396,7 +450,7 @@
 
   $('play').onclick = playQ;
   $('refBtn').onclick = playScale;
-  $('reset').onclick = () => { saved.stats[level.id] = { c: 0, t: 0, s: 0, best: 0 }; save(); renderStats(); };
+  $('reset').onclick = () => { saved.stats[statKey()] = { c: 0, t: 0, s: 0, best: 0 }; save(); renderStats(); renderGaps(); };
 
   document.addEventListener('keydown', e => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
