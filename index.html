@@ -204,8 +204,11 @@
   function audio() {
     if (!ctx) {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
-      master = ctx.createGain(); master.gain.value = 0.35;
+      master = ctx.createGain(); master.gain.value = 0.3;
+      // gentle limiter only: a default compressor ducks the 2nd note while the 1st still rings
       const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -3; comp.knee.value = 6; comp.ratio.value = 4;
+      comp.attack.value = 0.003; comp.release.value = 0.1;
       master.connect(comp).connect(ctx.destination);
     }
     if (ctx.state === 'suspended') ctx.resume();
@@ -225,8 +228,10 @@
     const t = c.currentTime + start;
     const g = c.createGain();
     g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(1, t + 0.012);
-    g.gain.exponentialRampToValueAtTime(0.35, t + 0.25);
+    // small speakers barely reproduce low notes: boost them a little
+    const peak = 1 + Math.max(0, 67 - midi) * 0.05;
+    g.gain.linearRampToValueAtTime(peak, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.35 * peak, t + 0.25);
     g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
     g.connect(master);
     const f = freq(midi);
@@ -251,7 +256,8 @@
     if (level.type === 'updown') {
       const gap = 4 + rand(9);           // 4〜12 semitones: big, easy to hear
       const up = Math.random() < 0.5;
-      const a = 52 + rand(18);
+      const low = 55 + rand(79 - 55 - gap + 1);   // keep both notes in G3〜G5
+      const a = up ? low : low + gap;
       q = { a, b: up ? a + gap : a - gap, answer: up ? 'up' : 'down', gap, answered: false };
     } else {
       tonic = 55 + rand(12);             // G3〜F#4: key changes every question
@@ -263,7 +269,7 @@
   }
   function playQ() {
     if (!q) return newQuestion();
-    if (level.type === 'updown') seq([q.a, q.b], 0.8, 1.0);
+    if (level.type === 'updown') seq([q.a, q.b], 0.9, 0.8);
     else seq([tonic, tonic + DEG[q.deg].semi], 0.85, 1.2);
   }
   function playScale() {
