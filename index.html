@@ -1,0 +1,408 @@
+<meta charset="utf-8">
+<title>ドレミ耳トレ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --ground: #EDEFF3;
+    --surface: #FFFFFF;
+    --ink: #1A1F2B;
+    --muted: #5E6676;
+    --line: #D5D9E1;
+    --btn: #1A1F2B;
+    --btn-ink: #FFFFFF;
+    --ok: #1F8A4C;
+    --ng: #C2392F;
+    --ok-bg: #E2F3E8;
+    --ng-bg: #F9E3E1;
+    /* Boomwhacker colors for movable-do degrees */
+    --d0: #E2352B; --d1: #F08A00; --d2: #F2C300; --d3: #4FA83D;
+    --d4: #179E9E; --d5: #6A4C9C; --d6: #D2337F; --d7: #E2352B;
+    --display: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", sans-serif;
+    --body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #12151C; --surface: #1B2029; --ink: #E8EBF1; --muted: #9AA3B2;
+      --line: #2D3440; --btn: #E8EBF1; --btn-ink: #12151C;
+      --ok: #4CC27E; --ng: #F07167; --ok-bg: #173325; --ng-bg: #3A1D1B;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #12151C; --surface: #1B2029; --ink: #E8EBF1; --muted: #9AA3B2;
+    --line: #2D3440; --btn: #E8EBF1; --btn-ink: #12151C;
+    --ok: #4CC27E; --ng: #F07167; --ok-bg: #173325; --ng-bg: #3A1D1B;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: var(--body); font-size: 15px; line-height: 1.6;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; display: grid; gap: 20px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+  h1 { font-family: var(--display); font-weight: 400; font-size: 30px; margin: 0; letter-spacing: .02em; }
+  h1 .dots { display: inline-flex; gap: 4px; margin-left: 10px; vertical-align: middle; }
+  h1 .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; }
+  .tagline { color: var(--muted); margin: 0; font-size: 14px; }
+
+  nav.levels { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  nav.levels button {
+    font: inherit; text-align: left; cursor: pointer; padding: 10px 12px;
+    background: transparent; color: var(--ink); border: 1.5px solid var(--line); border-radius: 10px;
+    display: grid; gap: 2px;
+  }
+  nav.levels button small { color: var(--muted); font-size: 12px; letter-spacing: .06em; }
+  nav.levels button b { font-weight: 700; font-size: 15px; }
+  nav.levels button[aria-pressed="true"] { background: var(--btn); color: var(--btn-ink); border-color: var(--btn); }
+  nav.levels button[aria-pressed="true"] small { color: inherit; opacity: .7; }
+
+  main { display: grid; grid-template-columns: 220px 1fr; gap: 20px; align-items: start; }
+
+  /* Ladder */
+  .ladder { background: var(--surface); border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
+  .ladder h2, .card h2 { font-size: 12px; letter-spacing: .12em; color: var(--muted); margin: 0; font-weight: 500; }
+  .rungs { display: flex; flex-direction: column-reverse; gap: 5px; }
+  .rung {
+    font: inherit; cursor: pointer; border: 0; border-radius: 8px; padding: 6px 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--c); color: #fff; font-weight: 700; transition: opacity .2s, transform .15s, box-shadow .2s;
+  }
+  .rung.light-ink { color: #1A1F2B; }
+  .rung span { font-size: 12px; font-weight: 500; opacity: .85; }
+  .rung.off { opacity: .22; }
+  .rung.hit { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--c); transform: translateX(6px); }
+  .rung:hover { transform: translateX(3px); }
+  .ladder p { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+  .keyname { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 700; }
+
+  /* Question card */
+  .card { background: var(--surface); border-radius: 14px; padding: 24px; display: grid; gap: 18px; }
+  .card .lead { margin: 0; font-size: 17px; font-weight: 500; text-wrap: balance; }
+  .playrow { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn {
+    font: inherit; font-weight: 700; cursor: pointer; border-radius: 999px; padding: 10px 20px;
+    border: 1.5px solid var(--btn); background: var(--btn); color: var(--btn-ink);
+  }
+  .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); font-weight: 500; }
+  .btn.big { font-size: 17px; padding: 14px 28px; }
+  .btn:disabled { opacity: .4; cursor: default; }
+  button:focus-visible { outline: 3px solid var(--d4); outline-offset: 2px; }
+
+  .answers { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 10px; }
+  .answers.two { grid-template-columns: 1fr 1fr; }
+  .ans {
+    font: inherit; cursor: pointer; border-radius: 12px; padding: 16px 8px; border: 0;
+    background: var(--c, var(--btn)); color: #fff; font-size: 20px; font-weight: 700;
+    display: grid; gap: 2px; justify-items: center; transition: transform .1s, opacity .2s;
+  }
+  .ans.light-ink { color: #1A1F2B; }
+  .ans kbd { font-family: var(--body); font-size: 11px; font-weight: 500; opacity: .75; }
+  .ans:active { transform: scale(.97); }
+  .ans.dim { opacity: .3; }
+  .ans.right { box-shadow: 0 0 0 3px var(--surface), 0 0 0 6px var(--ok); }
+  .ans.wrong { box-shadow: 0 0 0 3px var(--surface), 0 0 0 6px var(--ng); }
+  .updown .ans { background: var(--btn); color: var(--btn-ink); font-size: 22px; padding: 22px 8px; }
+
+  .feedback { border-radius: 10px; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+  .feedback.ok { background: var(--ok-bg); }
+  .feedback.ng { background: var(--ng-bg); }
+  .feedback strong { font-size: 17px; }
+  .feedback.ok strong { color: var(--ok); }
+  .feedback.ng strong { color: var(--ng); }
+  .feedback .sub { color: var(--muted); font-size: 13.5px; display: block; }
+  .feedback .acts { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); padding-top: 14px; gap: 8px; }
+  .stat small { display: block; color: var(--muted); font-size: 11.5px; letter-spacing: .08em; }
+  .stat b { font-size: 22px; font-variant-numeric: tabular-nums; font-family: var(--display); font-weight: 400; }
+  .hint { margin: 0; color: var(--muted); font-size: 13px; }
+  .hint.go { color: var(--ok); font-weight: 700; }
+  .linkbtn { font: inherit; font-size: 12.5px; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; padding: 0; justify-self: start; }
+
+  .tips { color: var(--muted); font-size: 13px; margin: 0; max-width: 65ch; }
+
+  @media (max-width: 720px) {
+    main { grid-template-columns: 1fr; }
+    .card { order: -1; padding: 18px; }
+    nav.levels { grid-template-columns: 1fr 1fr; }
+    .rungs { flex-direction: row; flex-wrap: wrap; }
+    .rung { flex: 1 1 22%; flex-direction: column; padding: 6px 4px; }
+    .rung.hit { transform: translateY(-3px); }
+    .stats { grid-template-columns: 1fr 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>ドレミ耳トレ<span class="dots" aria-hidden="true"><i style="background:var(--d0)"></i><i style="background:var(--d2)"></i><i style="background:var(--d4)"></i></span></h1>
+    <p class="tagline">「ド」からの距離を聴き分ける、相対音感のはじめの一歩</p>
+  </header>
+
+  <nav class="levels" id="levels" aria-label="レベル"></nav>
+
+  <main>
+    <section class="card" aria-live="polite">
+      <h2 id="qlabel">問題 1</h2>
+      <p class="lead" id="lead"></p>
+      <div class="playrow">
+        <button class="btn big" id="play" type="button">▶ 問題を聴く</button>
+        <button class="btn ghost" id="refBtn" type="button">ドレミ…を聴く</button>
+      </div>
+      <div class="answers" id="answers"></div>
+      <div id="feedback" hidden></div>
+      <div class="stats">
+        <div class="stat"><small>正解</small><b id="sCorrect">0</b></div>
+        <div class="stat"><small>回答数</small><b id="sTotal">0</b></div>
+        <div class="stat"><small>正答率</small><b id="sRate">–</b></div>
+        <div class="stat"><small>連続正解</small><b id="sStreak">0</b></div>
+      </div>
+      <p class="hint" id="hint"></p>
+      <button class="linkbtn" id="reset" type="button">このレベルの記録をリセット</button>
+    </section>
+
+    <aside class="ladder">
+      <h2>移動ドのはしご</h2>
+      <div class="rungs" id="rungs"></div>
+      <p>いまのキー：<span class="keyname" id="keyname"></span><br>タップするとその音が鳴ります。問題ごとにキーが変わっても、ドからの距離は同じです。</p>
+    </aside>
+  </main>
+
+  <p class="tips">ショートカット：<b>Space</b> もう一度聴く ／ <b>1〜8</b> 回答 ／ <b>Enter</b> 次の問題。コツ：音名を当てるのではなく、「ドに帰りたくなる感じ」「明るく開く感じ」など、ドとの関係の“雰囲気”を覚えましょう。</p>
+</div>
+
+<script>
+(() => {
+  const DEG = [
+    { name: 'ド', semi: 0 }, { name: 'レ', semi: 2 }, { name: 'ミ', semi: 4 }, { name: 'ファ', semi: 5 },
+    { name: 'ソ', semi: 7 }, { name: 'ラ', semi: 9 }, { name: 'シ', semi: 11 }, { name: '高いド', semi: 12 },
+  ];
+  const LIGHT_INK = new Set([2]); // yellow needs dark text
+  const KEY_NAMES = ['C', 'C♯/D♭', 'D', 'E♭', 'E', 'F', 'F♯/G♭', 'G', 'A♭', 'A', 'B♭', 'B'];
+
+  const LEVELS = [
+    { id: 1, tag: 'Lv.1', title: '上がる？下がる？', lead: '2つの音が鳴ります。2つめの音は、1つめより高い？低い？', type: 'updown' },
+    { id: 2, tag: 'Lv.2', title: 'ド・ミ・ソ', lead: 'はじめに「ド」が鳴ります。次の音はどれ？', type: 'degree', set: [0, 2, 4, 7] },
+    { id: 3, tag: 'Lv.3', title: 'ド〜ソ', lead: 'はじめに「ド」が鳴ります。次の音はどれ？（ドレミファソ）', type: 'degree', set: [0, 1, 2, 3, 4] },
+    { id: 4, tag: 'Lv.4', title: 'ドレミ全部', lead: 'はじめに「ド」が鳴ります。次の音はどれ？（ドレミファソラシド）', type: 'degree', set: [0, 1, 2, 3, 4, 5, 6, 7] },
+  ];
+
+  // ---------- storage (per-viewer convenience only) ----------
+  const STORE = 'doremi-mimitore-v1';
+  function load() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch { return {}; } }
+  function save() { try { localStorage.setItem(STORE, JSON.stringify(saved)); } catch {} }
+  const saved = load();
+  saved.stats = saved.stats || {};
+  let level = LEVELS.find(l => l.id === saved.level) || LEVELS[0];
+
+  // ---------- audio ----------
+  let ctx, master, active = [];
+  function audio() {
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      master = ctx.createGain(); master.gain.value = 0.35;
+      const comp = ctx.createDynamicsCompressor();
+      master.connect(comp).connect(ctx.destination);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  const freq = m => 440 * Math.pow(2, (m - 69) / 12);
+  function stopAll() {
+    const t = ctx ? ctx.currentTime : 0;
+    active.forEach(({ g, oscs }) => {
+      try { g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(0, t, 0.02); oscs.forEach(o => o.stop(t + 0.1)); } catch {}
+    });
+    active = [];
+  }
+  // soft piano-like tone: a few decaying partials
+  function note(midi, start, dur) {
+    const c = audio();
+    const t = c.currentTime + start;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(1, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.35, t + 0.25);
+    g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+    g.connect(master);
+    const f = freq(midi);
+    const oscs = [[1, 0.6, 'triangle'], [2, 0.18, 'sine'], [3, 0.07, 'sine'], [4, 0.03, 'sine']].map(([h, a, type]) => {
+      const o = c.createOscillator(); const og = c.createGain();
+      o.type = type; o.frequency.value = f * h; og.gain.value = a;
+      o.connect(og).connect(g); o.start(t); o.stop(t + dur + 0.05);
+      return o;
+    });
+    active.push({ g, oscs });
+  }
+  function seq(midis, step = 0.75, dur = 1.1) { stopAll(); midis.forEach((m, i) => note(m, 0.05 + i * step, dur)); }
+
+  // ---------- question state ----------
+  let tonic = 60;           // MIDI of current "ド"
+  let q = null;             // current question
+  let qNum = 0;
+  const rand = n => Math.floor(Math.random() * n);
+
+  function newQuestion() {
+    qNum++;
+    if (level.type === 'updown') {
+      const gap = 4 + rand(9);           // 4〜12 semitones: big, easy to hear
+      const up = Math.random() < 0.5;
+      const a = 52 + rand(18);
+      q = { a, b: up ? a + gap : a - gap, answer: up ? 'up' : 'down', gap, answered: false };
+    } else {
+      tonic = 55 + rand(12);             // G3〜F#4: key changes every question
+      const deg = level.set[rand(level.set.length)];
+      q = { deg, answer: deg, answered: false };
+    }
+    renderQuestion();
+    playQ();
+  }
+  function playQ() {
+    if (!q) return newQuestion();
+    if (level.type === 'updown') seq([q.a, q.b], 0.8, 1.0);
+    else seq([tonic, tonic + DEG[q.deg].semi], 0.85, 1.2);
+  }
+  function playScale() {
+    if (level.type === 'updown') return seq([60, 62, 64, 65, 67, 69, 71, 72], 0.32, 0.6);
+    seq(DEG.map(d => tonic + d.semi), 0.32, 0.6);
+  }
+
+  // ---------- rendering ----------
+  const $ = id => document.getElementById(id);
+
+  function renderLevels() {
+    $('levels').innerHTML = '';
+    LEVELS.forEach(l => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.id = 'lv' + l.id;
+      b.setAttribute('aria-pressed', String(l === level));
+      b.innerHTML = `<small>${l.tag}</small><b>${l.title}</b>`;
+      b.onclick = () => { if (l === level) return; level = l; saved.level = l.id; save(); stopAll(); q = null; qNum = 0; renderAll(); };
+      $('levels').appendChild(b);
+    });
+  }
+
+  function renderRungs(hit) {
+    const box = $('rungs'); box.innerHTML = '';
+    DEG.forEach((d, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.id = 'rung' + i;
+      b.className = 'rung' + (LIGHT_INK.has(i) ? ' light-ink' : '');
+      if (level.type === 'degree' && !level.set.includes(i)) b.classList.add('off');
+      if (hit === i) b.classList.add('hit');
+      b.style.setProperty('--c', `var(--d${i})`);
+      b.innerHTML = `${d.name}<span>${d.semi === 0 ? '基準' : '+' + d.semi + '半音'}</span>`;
+      b.onclick = () => { stopAll(); note(tonic + d.semi, 0.02, 1.0); };
+      box.appendChild(b);
+    });
+    $('keyname').textContent = `ド = ${KEY_NAMES[tonic % 12]}`;
+  }
+
+  function renderQuestion() {
+    $('qlabel').textContent = `${level.tag} ・ 問題 ${Math.max(qNum, 1)}`;
+    $('lead').textContent = level.lead;
+    $('play').textContent = q ? '↻ もう一度聴く' : '▶ 問題を聴く';
+    $('refBtn').textContent = level.type === 'updown' ? 'ドレミ…を聴く' : 'このキーのドレミを聴く';
+    $('feedback').hidden = true;
+
+    const box = $('answers'); box.innerHTML = '';
+    box.className = 'answers';
+    if (level.type === 'updown') {
+      box.classList.add('two', 'updown');
+      [['up', '↑ 上がった', '1'], ['down', '↓ 下がった', '2']].forEach(([v, label, k]) => box.appendChild(ansBtn(v, label, k)));
+    } else {
+      level.set.forEach((i, n) => {
+        const b = ansBtn(i, DEG[i].name, String(n + 1));
+        b.style.setProperty('--c', `var(--d${i})`);
+        if (LIGHT_INK.has(i)) b.classList.add('light-ink');
+        box.appendChild(b);
+      });
+    }
+    renderRungs();
+  }
+  function ansBtn(value, label, key) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'ans'; b.id = 'ans-' + value; b.dataset.v = value;
+    b.innerHTML = `${label}<kbd>${key}</kbd>`;
+    b.onclick = () => answer(value);
+    return b;
+  }
+
+  function stat() { return saved.stats[level.id] || (saved.stats[level.id] = { c: 0, t: 0, s: 0, best: 0 }); }
+  function renderStats() {
+    const s = stat();
+    $('sCorrect').textContent = s.c;
+    $('sTotal').textContent = s.t;
+    $('sRate').textContent = s.t ? Math.round((s.c / s.t) * 100) + '%' : '–';
+    $('sStreak').textContent = s.s;
+    const next = LEVELS[LEVELS.indexOf(level) + 1];
+    const hint = $('hint');
+    const ready = s.t >= 20 && s.c / s.t >= 0.8;
+    hint.className = 'hint' + (ready && next ? ' go' : '');
+    if (ready && next) hint.textContent = `正答率80%を超えました！ ${next.tag}「${next.title}」に進んでみましょう。`;
+    else if (ready) hint.textContent = '最終レベルで80%超え。かなり耳ができてきています！';
+    else hint.textContent = `目安：20問以上で正答率80%を超えたら次のレベルへ（ベスト連続正解 ${s.best}）`;
+  }
+
+  function answer(v) {
+    if (!q) { newQuestion(); return; }
+    if (q.answered) return;
+    q.answered = true;
+    const ok = String(v) === String(q.answer);
+    const s = stat();
+    s.t++; if (ok) { s.c++; s.s++; s.best = Math.max(s.best, s.s); } else s.s = 0;
+    save(); renderStats();
+
+    document.querySelectorAll('.ans').forEach(b => {
+      if (b.dataset.v === String(q.answer)) b.classList.add('right');
+      else if (b.dataset.v === String(v)) b.classList.add('wrong');
+      else b.classList.add('dim');
+    });
+
+    const fb = $('feedback');
+    fb.hidden = false;
+    fb.className = 'feedback ' + (ok ? 'ok' : 'ng');
+    let msg, sub, acts = '';
+    if (level.type === 'updown') {
+      msg = ok ? '正解！' : `ざんねん、正解は「${q.answer === 'up' ? '上がった' : '下がった'}」`;
+      sub = `${q.gap}半音${q.answer === 'up' ? '上がりました' : '下がりました'}`;
+    } else {
+      const d = DEG[q.answer];
+      msg = ok ? `正解！「${d.name}」` : `ざんねん、正解は「${d.name}」`;
+      sub = d.semi === 0 ? 'ドと同じ高さでした' : `ドから${d.semi}半音上`;
+      renderRungs(q.answer);
+      if (!ok) acts = `<button class="btn ghost" type="button" id="hearMine">あなたの答え（${DEG[v].name}）</button>`;
+      acts += `<button class="btn ghost" type="button" id="hearRight">正解（${d.name}）</button>`;
+    }
+    fb.innerHTML = `<div><strong>${msg}</strong><span class="sub">${sub}</span></div>
+      <div class="acts">${acts}<button class="btn" type="button" id="nextBtn">次の問題 →</button></div>`;
+    $('nextBtn').onclick = newQuestion;
+    if ($('hearRight')) $('hearRight').onclick = () => seq([tonic, tonic + DEG[q.answer].semi], 0.85, 1.2);
+    if ($('hearMine')) $('hearMine').onclick = () => seq([tonic, tonic + DEG[v].semi], 0.85, 1.2);
+    $('nextBtn').focus({ preventScroll: true });
+  }
+
+  function renderAll() { renderLevels(); renderQuestion(); renderStats(); }
+
+  $('play').onclick = playQ;
+  $('refBtn').onclick = playScale;
+  $('reset').onclick = () => { saved.stats[level.id] = { c: 0, t: 0, s: 0, best: 0 }; save(); renderStats(); };
+
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.code === 'Space') { e.preventDefault(); playQ(); }
+    else if (e.key === 'Enter' && q && q.answered) { e.preventDefault(); newQuestion(); }
+    else if (/^[1-8]$/.test(e.key)) {
+      const btns = document.querySelectorAll('.ans');
+      const b = btns[Number(e.key) - 1];
+      if (b) b.click();
+    }
+  });
+
+  renderAll();
+})();
+</script>
