@@ -168,6 +168,7 @@
       </div>
       <div class="playrow">
         <button class="btn big" id="play" type="button">▶ 問題を聴く</button>
+        <button class="btn big" id="nextBtn" type="button" hidden>次の問題 →</button>
         <button class="btn ghost" id="refBtn" type="button">ドレミ…を聴く</button>
       </div>
       <div class="answers" id="answers"></div>
@@ -369,6 +370,8 @@
       : gap.id ? `お手本：${gapLabel(gap)}の幅を聴く` : 'ドレミ…を聴く';
     renderGaps();
     $('feedback').hidden = true;
+    $('nextBtn').hidden = true;
+    $('play').classList.remove('ghost');
 
     const box = $('answers'); box.innerHTML = '';
     box.className = 'answers';
@@ -443,8 +446,9 @@
       acts += `<button class="btn ghost" type="button" id="hearRight">正解（${d.name}）</button>`;
     }
     fb.innerHTML = `<div><strong>${msg}</strong><span class="sub">${sub}</span></div>
-      <div class="acts">${acts}<button class="btn" type="button" id="nextBtn">次の問題 →</button></div>`;
-    $('nextBtn').onclick = newQuestion;
+      <div class="acts">${acts}</div>`;
+    $('nextBtn').hidden = false;
+    $('play').classList.add('ghost');   // after answering, "next" becomes the main action
     if ($('hearRight')) $('hearRight').onclick = () => seq([tonic, tonic + DEG[q.answer].semi], 0.85, 1.2);
     if ($('hearMine')) $('hearMine').onclick = () => seq([tonic, tonic + DEG[v].semi], 0.85, 1.2);
     $('nextBtn').focus({ preventScroll: true });
@@ -453,6 +457,7 @@
   function renderAll() { renderLevels(); renderQuestion(); renderStats(); }
 
   $('play').onclick = playQ;
+  $('nextBtn').onclick = newQuestion;
   $('refBtn').onclick = playScale;
   $('reset').onclick = () => { saved.stats[statKey()] = { c: 0, t: 0, s: 0, best: 0 }; save(); renderStats(); renderGaps(); };
 
