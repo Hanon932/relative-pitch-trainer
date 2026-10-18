@@ -185,7 +185,7 @@
     <aside class="ladder">
       <h2>移動ドのはしご</h2>
       <div class="rungs" id="rungs"></div>
-      <p>いまのキー：<span class="keyname" id="keyname"></span><br>タップするとその音が鳴ります。問題ごとにキーが変わっても、ドからの距離は同じです。</p>
+      <p>いまのキー：<span class="keyname" id="keyname"></span><br>タップするとその音が鳴ります。ドはいつも同じ高さ（C3）です。</p>
     </aside>
   </main>
 
@@ -276,7 +276,10 @@
   function seq(midis, step = 0.75, dur = 1.1) { stopAll(); midis.forEach((m, i) => note(m, 0.05 + i * step, dur)); }
 
   // ---------- question state ----------
-  let tonic = 60;           // MIDI of current "ド"
+  const TONIC = 48;         // "ド" is fixed at C3 (MIDI 48) so the register never jumps
+  const tonic = TONIC;
+  // C-major notes from C3 to C5, used for Lv.1 pairs
+  const SCALE = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23, 24].map(x => TONIC + x);
   let q = null;             // current question
   let qNum = 0;
   const rand = n => Math.floor(Math.random() * n);
@@ -287,11 +290,12 @@
       const fixed = GAPS.filter(g => g.id);
       const g = gap.id ? gap : fixed[rand(fixed.length)];
       const up = Math.random() < 0.5;
-      const low = 55 + rand(79 - 55 - g.id + 1);   // keep both notes in G3〜G5
+      // both notes stay on the C3-based do-re-mi; the lower one sits in C3〜C4
+      const lows = SCALE.filter(m => m <= TONIC + 12 && SCALE.includes(m + g.id));
+      const low = lows[rand(lows.length)];
       const a = up ? low : low + g.id;
       q = { a, b: up ? a + g.id : a - g.id, answer: up ? 'up' : 'down', g, answered: false };
     } else {
-      tonic = 55 + rand(12);             // G3〜F#4: key changes every question
       const deg = level.set[rand(level.set.length)];
       q = { deg, answer: deg, answered: false };
     }
@@ -305,8 +309,8 @@
   }
   function playScale() {
     if (level.type === 'updown') {
-      if (!gap.id) return seq([60, 62, 64, 65, 67, 69, 71, 72], 0.32, 0.6);
-      return seq([60, 60 + gap.id, 60 + gap.id, 60], 0.7, 0.65);
+      if (!gap.id) return seq(DEG.map(d => tonic + d.semi), 0.32, 0.6);
+      return seq([tonic, tonic + gap.id, tonic + gap.id, tonic], 0.7, 0.65);
     }
     seq(DEG.map(d => tonic + d.semi), 0.32, 0.6);
   }
@@ -354,14 +358,14 @@
       b.onclick = () => { stopAll(); note(tonic + d.semi, 0.02, 1.0); };
       box.appendChild(b);
     });
-    $('keyname').textContent = `ド = ${KEY_NAMES[tonic % 12]}`;
+    $('keyname').textContent = 'ド = C3（固定）';
   }
 
   function renderQuestion() {
     $('qlabel').textContent = `${level.tag} ・ 問題 ${Math.max(qNum, 1)}`;
     $('lead').textContent = level.lead;
     $('play').textContent = q ? '↻ もう一度聴く' : '▶ 問題を聴く';
-    $('refBtn').textContent = level.type !== 'updown' ? 'このキーのドレミを聴く'
+    $('refBtn').textContent = level.type !== 'updown' ? 'ドレミを聴く'
       : gap.id ? `お手本：${gapLabel(gap)}の幅を聴く` : 'ドレミ…を聴く';
     renderGaps();
     $('feedback').hidden = true;
